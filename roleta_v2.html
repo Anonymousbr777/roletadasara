@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Roleta da Sara · Sorteio de aniversário</title>
+<style>
+  :root{
+    --bg:#fdf6f9;
+    --ink:#3d2330;
+    --muted:#8c6f7e;
+    --line:#f0dce5;
+    --rose-900:#b8335f;
+    --rose-600:#e0457b;
+    --rose-400:#f06b9b;
+    --rose-200:#f9c9da;
+    --rose-100:#fde9f1;
+    --radius:20px;
+    --shadow:0 12px 32px rgba(184,51,95,.10);
+  }
+  *{ box-sizing:border-box; }
+  body{
+    margin:0;
+    min-height:100vh;
+    font-family:"Segoe UI",system-ui,-apple-system,Roboto,"Helvetica Neue",Arial,sans-serif;
+    color:var(--ink);
+    background:
+      radial-gradient(1100px 520px at 0% -10%, #fde3ee 0%, transparent 60%),
+      radial-gradient(900px 480px at 100% 0%, #fbe0ea 0%, transparent 55%),
+      var(--bg);
+    -webkit-font-smoothing:antialiased;
+  }
+  .topo{
+    max-width:1120px; margin:0 auto; padding:28px 24px 8px;
+    display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;
+  }
+  .marca{ display:flex; align-items:center; gap:14px; }
+  .marca svg{ width:46px; height:auto; }
+  .marca h1{ margin:0; font-size:1.55rem; font-weight:700; letter-spacing:-.01em; }
+  .marca p{ margin:2px 0 0; color:var(--muted); font-size:.95rem; }
+  .selo{
+    background:#fff; border:1px solid var(--line); border-radius:999px;
+    padding:8px 16px; font-size:.9rem; font-weight:600; color:var(--rose-900);
+  }
+  main{
+    max-width:1120px; margin:0 auto; padding:16px 24px 56px;
+    display:grid; grid-template-columns:minmax(0,1.15fr) minmax(0,1fr); gap:24px; align-items:start;
+  }
+  @media (max-width:880px){ main{ grid-template-columns:minmax(0,1fr); } }
+  .card{
+    background:#fff; border:1px solid var(--line); border-radius:var(--radius);
+    box-shadow:var(--shadow); padding:26px;
+  }
+  .card h2{ margin:0 0 4px; font-size:1.1rem; font-weight:700; }
+  .card .ajuda{ margin:0 0 16px; color:var(--muted); font-size:.9rem; line-height:1.5; }
+  .sep{ margin-top:30px !important; }
+  .sorteio{ display:flex; flex-direction:column; align-items:center; }
+  .sorteio .ajuda{ text-align:center; }
+  .roda{ position:relative; width:min(100%,440px); aspect-ratio:1/1; margin:6px 0 4px; }
+  canvas{
+    width:100%; height:100%; display:block; border-radius:50%;
+    filter:drop-shadow(0 18px 22px rgba(184,51,95,.18));
+  }
+  .ponteiro{
+    position:absolute; top:-16px; left:50%; transform:translateX(-50%);
+    width:40px; height:46px; z-index:3;
+    filter:drop-shadow(0 3px 3px rgba(61,35,48,.25));
+  }
+  .ponteiro svg{ display:block; width:100%; height:100%; }
+  .progresso{ width:100%; margin-top:18px; }
+  .progresso-topo{ display:flex; justify-content:space-between; font-size:.9rem; color:var(--muted); margin-bottom:8px; }
+  .barra{ height:8px; background:var(--rose-100); border-radius:999px; overflow:hidden; }
+  .barra span{
+    display:block; height:100%; width:0;
+    background:linear-gradient(90deg,var(--rose-400),var(--rose-600));
+    border-radius:999px; transition:width .4s ease;
+  }
+  .acoes{ display:flex; gap:12px; margin-top:22px; flex-wrap:wrap; justify-content:center; }
+  .status{ min-height:22px; margin:14px 0 0; text-align:center; color:var(--muted); font-size:.95rem; }
+  .btn{
+    font:inherit; font-weight:700; border:none; border-radius:14px; cursor:pointer;
+    transition:transform .12s ease, background .2s ease, box-shadow .2s ease;
+  }
+  .btn-principal{
+    font-size:1.05rem; padding:14px 34px; min-width:180px; color:#fff;
+    background:linear-gradient(180deg,var(--rose-400),var(--rose-600));
+    box-shadow:0 10px 20px rgba(224,69,123,.32);
+  }
+  .btn-principal:hover:not(:disabled){ transform:translateY(-1px); }
+  .btn-principal:active:not(:disabled){ transform:translateY(1px); }
+  .btn-principal:disabled{ background:#f2cfdc; box-shadow:none; cursor:not-allowed; }
+  .btn-secundario{
+    font-size:.92rem; font-weight:600; padding:12px 18px;
+    color:var(--rose-900); background:#fff; border:1px solid var(--rose-200);
+  }
+  .btn-secundario:hover:not(:disabled){ background:var(--rose-100); }
+  .btn-secundario:disabled{ opacity:.5; cursor:not-allowed; }
+  textarea{
+    width:100%; min-height:170px; resize:vertical; font:inherit; font-size:.95rem;
+    color:var(--ink); background:#fff; border:1px solid var(--line); border-radius:14px;
+    padding:12px 14px; outline:none;
+  }
+  textarea:focus{ border-color:var(--rose-400); box-shadow:0 0 0 4px rgba(240,107,155,.15); }
+  .rodape-editor{ display:flex; justify-content:space-between; align-items:center; gap:12px; margin-top:12px; flex-wrap:wrap; }
+  .contagem-nomes{ color:var(--muted); font-size:.9rem; }
+  .lista{ display:flex; flex-direction:column; gap:8px; max-height:360px; overflow:auto; padding-right:4px; }
+  .participante{
+    display:flex; align-items:center; gap:12px; padding:9px 12px;
+    border:1px solid var(--line); border-radius:14px;
+  }
+  .avatar{
+    width:36px; height:36px; border-radius:50%; display:grid; place-items:center;
+    color:#fff; font-weight:700; font-size:.95rem; flex-shrink:0;
+  }
+  .participante .nome{ flex:1; min-width:0; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .pill{
+    font-size:.78rem; font-weight:600; padding:4px 10px; border-radius:999px;
+    background:#f5f1f3; color:#6e5c66; white-space:nowrap;
+  }
+  .pill.sorteado{ background:var(--rose-100); color:var(--rose-900); }
+  .vezes{ min-width:38px; text-align:right; font-weight:700; color:var(--rose-900); }
+  .overlay{
+    position:fixed; inset:0; z-index:40; display:none; place-items:center; padding:20px;
+    background:rgba(61,35,48,.42);
+  }
+  .overlay.aberto{ display:grid; animation:surgirFundo .25s ease; }
+  .caixa{
+    width:100%; max-width:380px; background:#fff; border-radius:24px;
+    padding:34px 28px 28px; text-align:center;
+    box-shadow:0 30px 60px rgba(61,35,48,.25);
+    animation:subir .35s cubic-bezier(.2,.9,.3,1.1);
+  }
+  .caixa .rotulo{ font-size:.8rem; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); }
+  .caixa .vencedor{
+    margin:12px 0 24px; font-size:clamp(2rem,7vw,2.8rem); font-weight:800;
+    color:var(--rose-900); overflow-wrap:anywhere;
+  }
+  .caixa .btn-principal{ min-width:200px; }
+  .confete{
+    position:fixed; top:-30px; z-index:50; pointer-events:none; border-radius:2px;
+    animation-name:cair; animation-timing-function:linear; animation-fill-mode:forwards;
+  }
+  @keyframes cair{ to{ transform:translateY(110vh) rotate(600deg); opacity:.2; } }
+  @keyframes surgirFundo{ from{ opacity:0; } to{ opacity:1; } }
+  @keyframes subir{ from{ transform:translateY(16px) scale(.96); opacity:0; } to{ transform:none; opacity:1; } }
+
+  /* Toques e acabamento em telas sensíveis ao toque */
+  html{ -webkit-text-size-adjust:100%; text-size-adjust:100%; }
+  .btn{ touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
+  canvas{ user-select:none; -webkit-user-select:none; touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
+
+  /* Tablet e celular */
+  @media (max-width:880px){
+    .topo{ padding:20px 16px 4px; }
+    main{ padding:12px 16px 40px; gap:16px; }
+    .card{ padding:18px; border-radius:18px; }
+    .lista{ max-height:none; overflow:visible; }
+  }
+
+  /* Celular */
+  @media (max-width:480px){
+    body{ min-height:100dvh; }
+    .topo{ padding:18px 14px 2px; gap:10px; }
+    .marca{ gap:10px; }
+    .marca svg{ width:36px; }
+    .marca h1{ font-size:1.3rem; }
+    .marca p{ font-size:.85rem; }
+    .selo{ font-size:.85rem; padding:6px 14px; }
+    main{ padding:10px 12px 32px; gap:14px; }
+    .card{ padding:16px; }
+    .card h2{ font-size:1.05rem; }
+    .sorteio .ajuda{ font-size:.85rem; }
+    .roda{ width:100%; }
+    .acoes{ flex-direction:column; align-items:stretch; width:100%; }
+    .btn-principal{ width:100%; min-width:0; }
+    .btn-secundario{ width:100%; }
+    .rodape-editor .btn-secundario{ width:auto; }
+    textarea{ font-size:16px; min-height:140px; } /* 16px evita o zoom automático no iPhone */
+    .progresso-topo{ font-size:.85rem; }
+    .status{ font-size:.9rem; }
+    .participante{ padding:8px 10px; gap:9px; }
+    .avatar{ width:32px; height:32px; font-size:.85rem; }
+    .pill{ font-size:.72rem; padding:3px 9px; }
+    .vezes{ min-width:30px; }
+    .caixa{ padding:28px 20px 22px; }
+    .caixa .btn-principal{ min-width:0; width:100%; }
+  }
+
+  /* Celulares muito estreitos: libera espaço para os nomes */
+  @media (max-width:360px){
+    .avatar{ display:none; }
+    .participante{ padding:8px 10px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="topo">
+  <div class="marca">
+    <svg viewBox="0 0 120 70" aria-hidden="true">
+      <path d="M60 35C40 5 5 5 10 35C5 65 40 65 60 35Z" fill="#f06b9b"/>
+      <path d="M60 35C80 5 115 5 110 35C115 65 80 65 60 35Z" fill="#f06b9b"/>
+      <circle cx="60" cy="35" r="9" fill="#b8335f"/>
+    </svg>
+    <div>
+      <h1>Roleta da Sara</h1>
+      <p>Sorteio de aniversário · Feliz aniversário, Sara!</p>
+    </div>
+  </div>
+  <div class="selo" id="selo">13 participantes</div>
+</header>
+
+<main>
+  <section class="card sorteio">
+    <h2>Sorteio</h2>
+    <p class="ajuda">Cada participante sai uma vez por rodada. Quando todos saírem, é só iniciar uma nova rodada.</p>
+
+    <div class="roda">
+      <div class="ponteiro" aria-hidden="true">
+        <svg viewBox="0 0 44 46">
+          <defs>
+            <linearGradient id="gradPonteiro" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#f06b9b"/>
+              <stop offset="1" stop-color="#b8335f"/>
+            </linearGradient>
+          </defs>
+          <path d="M22 45 L4 12 Q22 -2 40 12 Z" fill="url(#gradPonteiro)" stroke="#ffffff" stroke-width="3" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <canvas id="roleta" role="img" aria-label="Roleta com os participantes"></canvas>
+    </div>
+
+    <div class="progresso">
+      <div class="progresso-topo"><span id="txtProgresso"></span><span id="pctProgresso">0%</span></div>
+      <div class="barra"><span id="barraProgresso"></span></div>
+    </div>
+
+    <p class="status" id="statusEl" aria-live="polite"></p>
+
+    <div class="acoes">
+      <button class="btn btn-principal" id="btnGirar">Girar</button>
+      <button class="btn btn-secundario" id="btnSom" aria-pressed="true">Som: ligado</button>
+    </div>
+  </section>
+
+  <aside class="card">
+    <h2>Participantes</h2>
+    <p class="ajuda">Um nome por linha. Edite a lista e clique em Atualizar roleta.</p>
+    <textarea id="listaNomes" spellcheck="false" aria-label="Lista de participantes"></textarea>
+    <div class="rodape-editor">
+      <span class="contagem-nomes" id="contagemNomes"></span>
+      <button class="btn btn-secundario" id="btnAtualizar">Atualizar roleta</button>
+    </div>
+
+    <h2 class="sep">Histórico</h2>
+    <p class="ajuda">Quantas vezes cada participante saiu, somando todas as rodadas.</p>
+    <div class="lista" id="lista"></div>
+  </aside>
+</main>
+
+<div class="overlay" id="overlay" role="dialog" aria-modal="true" aria-labelledby="rotuloResultado">
+  <div class="caixa">
+    <div class="rotulo" id="rotuloResultado">Resultado</div>
+    <div class="vencedor" id="nomeVencedor"></div>
+    <button class="btn btn-principal" id="btnFechar">Continuar</button>
+  </div>
+</div>
+
+<script>
+(() => {
+  // ===== Configuração =====
+  const PARTICIPANTES_INICIAIS = ["Bia", "Sara", "Hugo", "Cadu", "Thais", "Estefani", "Pedro", "Pietro", "NZX", "Duda", "Clara", "Lucas", "Vitor"];
+  const PALETA = ["#f7a8c4", "#fff4f8", "#e8568a"];   // rosa suave, quase branco e rosa forte
+  const CORES_AVATAR = ["#e8568a", "#f06b9b", "#c94a7c", "#d9557f", "#b8335f", "#f08ab0"];
+  const TEXTO_ESCURO = "#3d2330";
+  const TEXTO_CLARO = "#ffffff";
+  const TEXTO_JA_SAIU = "#8c6f7e";
+  const FONTE = '"Segoe UI", system-ui, Roboto, Arial, sans-serif';
+  const DOIS_PI = Math.PI * 2;
+  const PONTEIRO = Math.PI * 1.5; // topo da roleta (no canvas, 0 = direita e o ângulo cresce no sentido horário)
+  const TAM = 500;                // tamanho lógico do desenho
+
+  // ===== Elementos =====
+  const $ = id => document.getElementById(id);
+  const canvas = $("roleta");
+  const ctx = canvas.getContext("2d");
+  const btnGirar = $("btnGirar");
+  const btnSom = $("btnSom");
+  const btnAtualizar = $("btnAtualizar");
+  const btnFechar = $("btnFechar");
+  const listaNomes = $("listaNomes");
+  const contagemNomes = $("contagemNomes");
+  const lista = $("lista");
+  const statusEl = $("statusEl");
+  const selo = $("selo");
+  const txtProgresso = $("txtProgresso");
+  const pctProgresso = $("pctProgresso");
+  const barraProgresso = $("barraProgresso");
+  const overlay = $("overlay");
+  const nomeVencedor = $("nomeVencedor");
+
+  // Canvas nítido em telas de alta densidade
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = TAM * dpr;
+  canvas.height = TAM * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  // ===== Estado =====
+  let nomes = [];             // participantes atuais
+  let sorteados = new Set();  // quem já saiu nesta rodada
+  let contagem = new Map();   // quantas vezes cada nome saiu (todas as rodadas)
+  let rotacao = 0;            // ângulo atual da roleta, em radianos
+  let girando = false;
+  let somLigado = true;
+  let audioCtx = null;
+
+  const mod = (a, m) => ((a % m) + m) % m;
+
+  // Transforma o texto em lista de nomes, sem linhas vazias e sem repetidos
+  function lerNomes(texto) {
+    const vistos = new Set();
+    return texto
+      .split("\n")
+      .map(n => n.trim())
+      .filter(n => n.length > 0)
+      .filter(n => {
+        if (vistos.has(n)) return false;
+        vistos.add(n);
+        return true;
+      });
+  }
+
+  // Índice da fatia que está exatamente sob o ponteiro
+  function indiceSobPonteiro(rot, n) {
+    const fatia = DOIS_PI / n;
+    return Math.floor(mod(PONTEIRO - rot, DOIS_PI) / fatia) % n;
+  }
+
+  // ===== Som (tique do ponteiro) =====
+  function prepararSom() {
+    // Precisa acontecer dentro de um clique para o navegador liberar o áudio
+    if (!audioCtx && somLigado) {
+      try {
+        const Ctx = window.AudioContext || window.webkitAudioContext;
+        if (Ctx) audioCtx = new Ctx();
+      } catch (e) { audioCtx = null; }
+    }
+    if (audioCtx && audioCtx.state === "suspended") audioCtx.resume();
+  }
+
+  function tique() {
+    if (!somLigado || !audioCtx) return;
+    try {
+      const agora = audioCtx.currentTime;
+      const osc = audioCtx.createOscillator();
+      const ganho = audioCtx.createGain();
+      osc.type = "triangle";
+      osc.frequency.value = 1500;
+      ganho.gain.setValueAtTime(0.0001, agora);
+      ganho.gain.exponentialRampToValueAtTime(0.09, agora + 0.004);
+      ganho.gain.exponentialRampToValueAtTime(0.0001, agora + 0.045);
+      osc.connect(ganho).connect(audioCtx.destination);
+      osc.start(agora);
+      osc.stop(agora + 0.05);
+    } catch (e) { /* sem áudio, o sorteio funciona normalmente */ }
+  }
+
+  btnSom.addEventListener("click", () => {
+    somLigado = !somLigado;
+    btnSom.textContent = somLigado ? "Som: ligado" : "Som: desligado";
+    btnSom.setAttribute("aria-pressed", String(somLigado));
+  });
+
+  // ===== Desenho =====
+  // Laço decorativo no miolo da roleta (desenhado com curvas, sem personagens)
+  function desenharLaco(x, y, escala) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(escala / 60, escala / 60);
+    ctx.fillStyle = "#e8568a";
+    ctx.beginPath();                       // laço esquerdo
+    ctx.moveTo(0, 0);
+    ctx.bezierCurveTo(-8, -26, -40, -28, -44, -6);
+    ctx.bezierCurveTo(-46, 14, -18, 16, 0, 0);
+    ctx.fill();
+    ctx.beginPath();                       // laço direito
+    ctx.moveTo(0, 0);
+    ctx.bezierCurveTo(8, -26, 40, -28, 44, -6);
+    ctx.bezierCurveTo(46, 14, 18, 16, 0, 0);
+    ctx.fill();
+    ctx.beginPath();                       // nó central
+    ctx.arc(0, 0, 7, 0, DOIS_PI);
+    ctx.fillStyle = "#b8335f";
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function desenharRoleta() {
+    const n = nomes.length;
+    const c = TAM / 2;
+    const raioExterno = TAM / 2 - 6;
+    const raio = raioExterno - 26;   // área das fatias
+    ctx.clearRect(0, 0, TAM, TAM);
+
+    // Aro externo com gradiente
+    const gradAro = ctx.createRadialGradient(c, c, raio, c, c, raioExterno);
+    gradAro.addColorStop(0, "#fbd3e3");
+    gradAro.addColorStop(1, "#c94a7c");
+    ctx.beginPath();
+    ctx.arc(c, c, raioExterno, 0, DOIS_PI);
+    ctx.fillStyle = gradAro;
+    ctx.fill();
+
+    // Luzes do aro
+    const luzes = 24;
+    for (let k = 0; k < luzes; k++) {
+      const a = (k / luzes) * DOIS_PI;
+      ctx.beginPath();
+      ctx.arc(c + Math.cos(a) * (raioExterno - 13), c + Math.sin(a) * (raioExterno - 13), 3.5, 0, DOIS_PI);
+      ctx.fillStyle = k % 2 === 0 ? "#ffffff" : "#fde3ee";
+      ctx.fill();
+    }
+
+    if (n === 0) return;
+
+    const fatia = DOIS_PI / n;
+
+    nomes.forEach((nome, i) => {
+      const inicio = rotacao + i * fatia;
+      const fim = inicio + fatia;
+      const meio = inicio + fatia / 2;
+      const jaSaiu = sorteados.has(nome);
+
+      // Três cores em sequência; evita que a última fatia encoste na primeira
+      let indiceCor = i % PALETA.length;
+      if (i === n - 1 && indiceCor === 0 && n > 1) indiceCor = 1;
+      const cor = PALETA[indiceCor];
+
+      // Fatia
+      ctx.beginPath();
+      ctx.moveTo(c, c);
+      ctx.arc(c, c, raio, inicio, fim);
+      ctx.closePath();
+      ctx.fillStyle = cor;
+      ctx.fill();
+      if (jaSaiu) {
+        ctx.fillStyle = "rgba(255,255,255,.62)";
+        ctx.fill();
+      }
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = "rgba(255,255,255,.95)";
+      ctx.stroke();
+
+      // Nome ao longo do raio da fatia
+      const tamanho = Math.max(10, Math.min(19, fatia * raio * 0.42));
+      const texto = (jaSaiu ? "✓ " : "") + nome;
+      const maxLargura = raio - 84;
+
+      ctx.save();
+      ctx.translate(c, c);
+      ctx.rotate(meio);
+      ctx.translate(raio - 18, 0);
+      ctx.font = `600 ${tamanho}px ${FONTE}`;
+      const largura = ctx.measureText(texto).width;
+      if (largura > maxLargura) ctx.scale(maxLargura / largura, 1); // comprime o texto se for longo demais
+      ctx.textAlign = "right";
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = jaSaiu ? TEXTO_JA_SAIU : (cor === PALETA[2] ? TEXTO_CLARO : TEXTO_ESCURO);
+      ctx.fillText(texto, 0, 0);
+      ctx.restore();
+    });
+
+    // Miolo
+    const gradMiolo = ctx.createRadialGradient(c, c - 8, 4, c, c, 52);
+    gradMiolo.addColorStop(0, "#ffffff");
+    gradMiolo.addColorStop(1, "#fbe3ed");
+    ctx.beginPath();
+    ctx.arc(c, c, 52, 0, DOIS_PI);
+    ctx.fillStyle = gradMiolo;
+    ctx.fill();
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = "#e8568a";
+    ctx.stroke();
+    desenharLaco(c, c + 1, 22);
+  }
+
+  // ===== Painéis =====
+  function renderizarLista() {
+    lista.innerHTML = "";
+    nomes.forEach((nome, i) => {
+      const jaSaiu = sorteados.has(nome);
+      const vezes = contagem.get(nome) || 0;
+
+      const linha = document.createElement("div");
+      linha.className = "participante";
+
+      const avatar = document.createElement("div");
+      avatar.className = "avatar";
+      avatar.style.background = CORES_AVATAR[i % CORES_AVATAR.length];
+      avatar.textContent = nome.charAt(0).toUpperCase();
+
+      const rotulo = document.createElement("div");
+      rotulo.className = "nome";
+      rotulo.textContent = nome;
+
+      const pill = document.createElement("span");
+      pill.className = "pill" + (jaSaiu ? " sorteado" : "");
+      pill.textContent = jaSaiu ? "Já sorteado" : "Aguardando";
+
+      const total = document.createElement("span");
+      total.className = "vezes";
+      total.textContent = "×" + vezes;
+      total.title = "Vezes que saiu";
+
+      linha.append(avatar, rotulo, pill, total);
+      lista.appendChild(linha);
+    });
+  }
+
+  function atualizarPainel() {
+    const total = nomes.length;
+    const feitos = sorteados.size;
+    const pct = total ? Math.round((feitos / total) * 100) : 0;
+    txtProgresso.textContent = `${feitos} de ${total} sorteados nesta rodada`;
+    pctProgresso.textContent = pct + "%";
+    barraProgresso.style.width = pct + "%";
+    selo.textContent = `${total} ${total === 1 ? "participante" : "participantes"}`;
+  }
+
+  function atualizarStatus() {
+    const restam = nomes.length - sorteados.size;
+    const rodadaCheia = nomes.length > 0 && restam === 0;
+
+    if (nomes.length === 0) {
+      statusEl.textContent = "Adicione pelo menos um participante.";
+    } else if (rodadaCheia) {
+      statusEl.textContent = "Rodada concluída. Todos já saíram. Clique em Nova rodada para recomeçar.";
+    } else if (restam === nomes.length) {
+      statusEl.textContent = "Clique em Girar para sortear.";
+    } else {
+      statusEl.textContent = `Restam ${restam} ${restam === 1 ? "participante" : "participantes"} nesta rodada.`;
+    }
+
+    btnGirar.textContent = rodadaCheia ? "Nova rodada" : "Girar";
+    btnGirar.disabled = girando || nomes.length === 0;
+    btnAtualizar.disabled = girando;
+  }
+
+  function atualizarContagemDigitacao() {
+    const qtd = lerNomes(listaNomes.value).length;
+    contagemNomes.textContent = `${qtd} ${qtd === 1 ? "nome" : "nomes"} digitados`;
+  }
+
+  // ===== Resultado e confete =====
+  function mostrarVencedor(nome) {
+    nomeVencedor.textContent = nome;
+    overlay.classList.add("aberto");
+    btnFechar.focus();
+    soltarConfete();
+  }
+
+  function fecharVencedor() {
+    overlay.classList.remove("aberto");
+    btnGirar.focus();
+  }
+
+  btnFechar.addEventListener("click", fecharVencedor);
+  overlay.addEventListener("click", e => { if (e.target === overlay) fecharVencedor(); });
+  document.addEventListener("keydown", e => {
+    if (e.key === "Escape" && overlay.classList.contains("aberto")) fecharVencedor();
+  });
+
+  function soltarConfete() {
+    const cores = ["#f06b9b", "#e8568a", "#f9c9da", "#ffffff", "#fbd58a"];
+    for (let i = 0; i < 70; i++) {
+      const peca = document.createElement("span");
+      peca.className = "confete";
+      peca.style.left = (Math.random() * 100) + "vw";
+      peca.style.width = (6 + Math.random() * 6) + "px";
+      peca.style.height = (10 + Math.random() * 8) + "px";
+      peca.style.background = cores[Math.floor(Math.random() * cores.length)];
+      peca.style.animationDuration = (2.2 + Math.random() * 2) + "s";
+      peca.style.animationDelay = (Math.random() * 0.5) + "s";
+      document.body.appendChild(peca);
+      setTimeout(() => peca.remove(), 4800);
+    }
+  }
+
+  // ===== Sorteio =====
+  function girar() {
+    if (girando || nomes.length === 0) return;
+    prepararSom();
+
+    // Rodada concluída: recomeça, mantendo a contagem
+    if (sorteados.size >= nomes.length) {
+      sorteados.clear();
+      desenharRoleta();
+      renderizarLista();
+      atualizarPainel();
+      atualizarStatus();
+      return;
+    }
+
+    // Sorteia só entre quem ainda não saiu nesta rodada
+    const disponiveis = [];
+    nomes.forEach((nome, i) => { if (!sorteados.has(nome)) disponiveis.push(i); });
+    const vencedor = disponiveis[Math.floor(Math.random() * disponiveis.length)];
+
+    // Calcula onde a roleta deve parar para o ponteiro cair na fatia sorteada
+    const fatia = DOIS_PI / nomes.length;
+    const desvio = (Math.random() - 0.5) * fatia * 0.6; // pousa em um ponto aleatório dentro da fatia
+    const alvo = mod(PONTEIRO - (vencedor + 0.5) * fatia - desvio, DOIS_PI);
+    const avanco = mod(alvo - rotacao, DOIS_PI);
+    const voltas = 4 + Math.floor(Math.random() * 3);
+    const rotacaoInicial = rotacao;
+    const rotacaoFinal = rotacaoInicial + avanco + voltas * DOIS_PI;
+    const duracao = 4500 + Math.random() * 1500;
+    const inicio = performance.now();
+    let ultimaFatia = indiceSobPonteiro(rotacaoInicial, nomes.length);
+
+    girando = true;
+    atualizarStatus();
+    statusEl.textContent = "Girando...";
+
+    function animar(agora) {
+      const t = Math.min(1, (agora - inicio) / duracao);
+      const suave = 1 - Math.pow(1 - t, 4); // começa rápido e desacelera no final
+      rotacao = rotacaoInicial + (rotacaoFinal - rotacaoInicial) * suave;
+
+      const atual = indiceSobPonteiro(rotacao, nomes.length);
+      if (atual !== ultimaFatia) {
+        ultimaFatia = atual;
+        tique();
+      }
+      desenharRoleta();
+
+      if (t < 1) {
+        requestAnimationFrame(animar);
+        return;
+      }
+
+      // Fim do giro
+      rotacao = mod(rotacaoFinal, DOIS_PI);
+      girando = false;
+      const nome = nomes[vencedor];
+      sorteados.add(nome);
+      contagem.set(nome, (contagem.get(nome) || 0) + 1);
+      desenharRoleta();
+      renderizarLista();
+      atualizarPainel();
+      atualizarStatus();
+      mostrarVencedor(nome);
+    }
+
+    requestAnimationFrame(animar);
+  }
+
+  // ===== Atualizar participantes =====
+  function atualizarRoleta() {
+    if (girando) return;
+    const novos = lerNomes(listaNomes.value);
+    if (novos.length === 0) {
+      statusEl.textContent = "Digite pelo menos um nome antes de atualizar.";
+      return;
+    }
+
+    // Quem continua na lista mantém a contagem; nomes novos começam em zero
+    const novaContagem = new Map();
+    novos.forEach(nome => novaContagem.set(nome, contagem.get(nome) || 0));
+    contagem = novaContagem;
+    sorteados = new Set([...sorteados].filter(nome => novos.includes(nome)));
+    nomes = novos;
+
+    desenharRoleta();
+    renderizarLista();
+    atualizarPainel();
+    atualizarStatus();
+  }
+
+  // ===== Inicialização =====
+  btnGirar.addEventListener("click", girar);
+  btnAtualizar.addEventListener("click", atualizarRoleta);
+  listaNomes.addEventListener("input", atualizarContagemDigitacao);
+
+  listaNomes.value = PARTICIPANTES_INICIAIS.join("\n");
+  nomes = lerNomes(listaNomes.value);
+  nomes.forEach(nome => contagem.set(nome, 0));
+
+  atualizarContagemDigitacao();
+  desenharRoleta();
+  renderizarLista();
+  atualizarPainel();
+  atualizarStatus();
+})();
+</script>
+</body>
+</html>
